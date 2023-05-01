@@ -9,7 +9,7 @@ Arduino, but these are not needed in this sketch.
 This sketch was made for debugging purposes.
 Will set the pins to HIGH - LOW - HIGH - LOW...
 periodically.
-This can be used for checking if whether LEDs
+This can be used for checking whether LEDs
 are still working or not.
 NOTE: use appropriate resistors!
 */
@@ -56,9 +56,10 @@ void loop() {
   for (int i = 0; i < sizeof(LED_arr); i++){
     digitalWrite(LED_arr[i], HIGH);
   }
-  delay(PERIOD); //Wait 1 second
+  delay(PERIOD);
   for (int i = 0; i < sizeof(LED_arr); i++){
     digitalWrite(LED_arr[i], LOW);
   }
-  delay(PERIOD); //Wait 1 second
+  delay(PERIOD);
 }
+
