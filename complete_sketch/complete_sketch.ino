@@ -24,9 +24,9 @@ int pos = 0;    // variable to store the servo position
 int startTime;
 SGP30 mySensor; //create an object of the SGP30 class
 //
-float LOWER = 1000;
-float UPPER = 2000;
-float FULLY_OPENED_ANGLE = 90;
+float LOWER = 600;  // default: 1000
+float UPPER = 800;  // default: 2000
+float FULLY_OPENED_ANGLE = 180;
 float factor = FULLY_OPENED_ANGLE / (UPPER - LOWER);
 //Touch
 bool status = false;
@@ -68,7 +68,7 @@ void setup() {
   //measureAirQuality should be called in one second increments after a call to initAirQuality
   mySensor.initAirQuality();
   myservo.attach(9);  // attaches the servo on pin 9 to the servo object
-  myservo.write(0);
+  myservo.write(180);
 
   //Touchsensor
   pinMode(touchOut, OUTPUT);
@@ -89,7 +89,7 @@ void loop() {
   // int co2 = mySensor.CO2 - 400;
   float co2_measured = mySensor.CO2;
   // float calcServoPos = factor * (co2);
-  float servo_pos = (co2_measured - 1000) * factor;
+  float servo_pos = 180 - (co2_measured - LOWER) * factor;
   Serial.print("current CO2: ");
   Serial.println(co2_measured);
   Serial.print("current Servo: ");
@@ -103,10 +103,11 @@ void loop() {
     pos = int(servo_pos);
     myservo.write(pos);
     } else {
-      Serial.print("equals a theoretical servo_pos of ");
-      Serial.println(servo_pos);
+      // Serial.print("equals a theoretical servo_pos of ");
+      // Serial.println(servo_pos);
     }
   if (co2_measured >= UPPER){
+    // TODO: refactor to consider actual angle.
     pos = FULLY_OPENED_ANGLE;
   }
   //Touch
@@ -121,7 +122,7 @@ void loop() {
   } else if(status == 1 && i == 0){
     status = 0;
     Serial.print("Losgelassen ");
-    Serial.println(i);
+    Serial.println(i); 
   }
 /*
   //Tone testen
