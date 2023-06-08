@@ -58,7 +58,7 @@ void loop() {
   // update
   update_measurements(co2);
   // compute average
-  avg = get_current_co2_average();
+  float avg = get_current_co2_average();
   Serial.print("The current average co2 is ");
   Serial.println(avg);
 }
@@ -72,6 +72,11 @@ void update_measurements(float new_measurement){
   }
   // finally, add new measurement value to array
   measurements[measurements_length - 1] = new_measurement;
+  Serial.print("current measurements: ");
+  for (int i = 0; i < measurements_length; i++){
+    Serial.print(measurements[i]);
+  }
+
 }
 
 float get_current_co2_average(){
@@ -79,7 +84,7 @@ float get_current_co2_average(){
   // all elements in measurements array.
   int measurements_length = sizeof(measurements)/sizeof(measurements[0]);
   float sum = 0;
-  for (int i = 1; i < measurements_length; i++){
+  for (int i = 0; i < measurements_length; i++){
     sum = sum + measurements[i];
   }
   return sum / measurements_length;
