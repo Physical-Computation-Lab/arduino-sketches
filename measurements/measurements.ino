@@ -3,9 +3,10 @@
  
 SGP30 mySensor; //create an object of the SGP30 class
 // trying to set a variables' value to 20 (for example)
-// produces an error, so just hardcode the value.
+// produces an error when trying to initialize the array
+// with it, so just hardcode the value.
+// this value should be adapted empirically.
 int measurements[20];
-
 
 /*
 First try at implementing a function
@@ -74,6 +75,8 @@ void update_measurements(float new_measurement){
 }
 
 float get_current_co2_average(){
+  // compute and return the average value of
+  // all elements in measurements array.
   int measurements_length = sizeof(measurements)/sizeof(measurements[0]);
   float sum = 0;
   for (int i = 1; i < measurements_length; i++){
