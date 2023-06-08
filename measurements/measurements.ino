@@ -50,6 +50,10 @@ void calibrate_sensor(){
 void loop() {
   // main loop.
   delay(1000); // Wait 1 second
+  set_co2_level();
+}
+
+void set_co2_level(){
   mySensor.measureAirQuality();
   // CO2
   float co2 = mySensor.CO2;
