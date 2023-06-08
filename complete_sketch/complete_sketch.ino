@@ -111,19 +111,7 @@ void loop() {
     pos = FULLY_OPENED_ANGLE;
   }
   //Touch
-  out = (out == LOW) ? HIGH : LOW;
-  digitalWrite(touchOut, out);
-  long int i = 0;
-  while(digitalRead(touchIn) != out) i++;
-  if(status == 0 && i > 0){
-    status = 1;
-    Serial.print("Angefasst ");
-    Serial.println(i);
-  } else if(status == 1 && i == 0){
-    status = 0;
-    Serial.print("Losgelassen ");
-    Serial.println(i); 
-  }
+  TouchSensor();
 /*
   //Tone testen
   tone(13,1000);
@@ -146,4 +134,21 @@ void loop() {
   //Serial.print(calcServoPos);
   //Serial.print("\t servo position: ");
   //Serial.println(pos);
+}
+
+
+void TouchSensor(){
+  out = (out == LOW) ? HIGH : LOW;
+  digitalWrite(touchOut, out);
+  long int i = 0;
+  while(digitalRead(touchIn) != out) i++;
+  if(status == 0 && i > 0){
+    status = 1;
+    Serial.print("Angefasst ");
+    Serial.println(i);
+  } else if(status == 1 && i == 0){
+    status = 0;
+    Serial.print("Losgelassen ");
+    Serial.println(i); 
+  }
 }
