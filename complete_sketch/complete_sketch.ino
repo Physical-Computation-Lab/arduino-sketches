@@ -69,6 +69,11 @@ void setup() {
   mySensor.initAirQuality();
   myservo.attach(9);  // attaches the servo on pin 9 to the servo object
   myservo.write(0);
+
+  //Touchsensor
+  pinMode(touchOut, OUTPUT);
+  pinMode(touchIn, INPUT);
+  digitalWrite(touchOut, out);
 }
 
 void loop() {
@@ -115,7 +120,7 @@ void loop() {
     Serial.println(i);
   } else if(status == 1 && i == 0){
     status = 0;
-    Serial.print("Losgelassen");
+    Serial.print("Losgelassen ");
     Serial.println(i);
   }
 /*
