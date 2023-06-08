@@ -23,6 +23,9 @@ int measurements[20];
 #define FULLY_OPENED_MOTOR_ANGLE 180
 Servo myservo;  // create servo object to control a servo
 int pos = 0;    // variable to store the servo position
+#define WINDOW_OPENING_SPEED 1 // which values are reasonable?
+#define WINDOW_CLOSING_SPEED 2 // are floats allowed?
+#define WINDOW_TOLERANCE 2
 int startTime;
 
 // Window
@@ -150,32 +153,33 @@ float get_current_co2_average(){
 }
 
 //
-// Servo motor functions
+// Servo motor / window functions
 //
 
 void set_servor_motor_position(){
-  float current_servo_pos = FULLY_OPENED_MOTOR_ANGLE - (current_avg_co2 - LOWER) * WINDOW_FACTOR;
-  if (current_servo_pos > 180){
-    current_servo_pos = 180
-  } else if (current_servo_pos < 0){
-    current_servo_pos = 0
+  float new_servo_pos = FULLY_OPENED_MOTOR_ANGLE - (current_avg_co2 - LOWER) * WINDOW_FACTOR;
+  if (new_servo_pos > 180){
+    new_servo_pos = 180
+  } else if (new_servo_pos < 0){
+    new_servo_pos = 0
   }
   Serial.print("current servo motor angle: ");
   Serial.println(myservo.read());
-  pos = int(current_servo_pos);
   Serial.print("new position is computed as ");
-  Serial.println(pos);
-  if (pos != current_servo_pos){
-    Serial.println("Setting new servo motor position.")
-    myservo.write(pos);
+  Serial.println(new_servo_pos);
+  // only apply change when the newly computed position
+  // is outside of the WINDOW_TOLERANCE to avoid rapid 
+  // and frequent changes
+  if (new_servo_pos - WINDOW_TOLERANCE > current_servo_pos){
+    Serial.println("Setting new servo motor position: opening.")
+    myservo.write(current_servo_pos + WINDOW_OPENING_SPEED); // can floats be used?
+  } else if (new_servo_pos + WINDOW_TOLERANCE < current_servo_pos){
+    Serial.println("Setting new servo motor position: opening.")
+    myservo.write(current_servo_pos - WINDOW_CLOSING_SPEED); // can floats be used?
   } else {
-    Serial.println("Servo motor position did not change; doing nothing.")
+    Serial.println("Not setting new servo motor position.")
   }
 }
-
-//
-// Window functions
-// (there are no distinct window functions?!)
 
 //
 // Touch sensor functions
