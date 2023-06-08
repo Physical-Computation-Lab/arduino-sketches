@@ -22,8 +22,7 @@ int measurements[20];
 #define SERVO 9
 #define FULLY_OPENED_MOTOR_ANGLE 180
 Servo myservo;  // create servo object to control a servo
-int pos = 0;    // variable to store the servo position
-int startTime;
+int startTime;  // is this variable needed?
 
 // Window
 #define LOWER 600  // default: 1000
@@ -63,7 +62,7 @@ void setup() {
   digitalWrite(BLUE, 0);
   digitalWrite(RED, HIGH); 
   // Servo motor
-  startTime = millis();
+  startTime = millis(); // is this needed?
   Serial.begin(BAUD_RATE);
   Wire.begin();
   // Initialize sensor
@@ -75,6 +74,8 @@ void setup() {
   // Initializes sensor for air quality readings
   // measureAirQuality should be called in one second increments after a call to initAirQuality
   mySensor.initAirQuality();
+  calibrate_sensor();
+  // servo motor 
   myservo.attach(SERVO);  // attaches the servo on pin 9 to the servo object
   myservo.write(180);
   // Touchsensor
@@ -91,6 +92,8 @@ void loop() {
   set_servor_motor_position();
   // Touch
   touch_sensor();
+  // RGB LED
+
   // Sound
   // _debug();
 }
@@ -101,6 +104,7 @@ void loop() {
 
 void calibrate_sensor(){
   // measureAirQuality should be called in one second increments after a call to initAirQuality
+  // add some RGB LED effects to the loop?
   for (int i = 0; i < CALIBRATION_MEASUREMENTS; i++){
     Serial.println("calibrating sensor...please wait. ");
     delay(ms_per_measurement); 
@@ -150,21 +154,23 @@ float get_current_co2_average(){
 }
 
 //
-// Servo motor functions
+// Servo motor / window functions
 //
 
 void set_servor_motor_position(){
-  float current_servo_pos = FULLY_OPENED_MOTOR_ANGLE - (current_avg_co2 - LOWER) * WINDOW_FACTOR;
-  if (current_servo_pos > 180){
-    current_servo_pos = 180
-  } else if (current_servo_pos < 0){
-    current_servo_pos = 0
+  float new_servo_pos = FULLY_OPENED_MOTOR_ANGLE - (current_avg_co2 - LOWER) * WINDOW_FACTOR;
+  if (new_servo_pos > 180){
+    new_servo_pos = 180
+  } else if (new_servo_pos < 0){
+    new_servo_pos = 0
   }
   Serial.print("current servo motor angle: ");
   Serial.println(myservo.read());
-  pos = int(current_servo_pos);
+  int pos = int(new_servo_pos); // are floats allowed?
   Serial.print("new position is computed as ");
   Serial.println(pos);
+  // set new position when new and current
+  // position are not equal
   if (pos != current_servo_pos){
     Serial.println("Setting new servo motor position.")
     myservo.write(pos);
@@ -172,10 +178,6 @@ void set_servor_motor_position(){
     Serial.println("Servo motor position did not change; doing nothing.")
   }
 }
-
-//
-// Window functions
-// (there are no distinct window functions?!)
 
 //
 // Touch sensor functions
