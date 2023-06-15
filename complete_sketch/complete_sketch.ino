@@ -25,15 +25,15 @@ Servo myservo;  // create servo object to control a servo
 int startTime;  // is this variable needed?
 
 // Window
-#define LOWER 600  // default: 1000
-#define UPPER 800  // default: 2000
-float WINDOW_FACTOR = FULLY_OPENED_ANGLE / (UPPER - LOWER);
+#define LOWER 450.0  // default: 1000
+#define UPPER 800.0  // default: 2000
+float WINDOW_FACTOR = FULLY_OPENED_MOTOR_ANGLE / (UPPER - LOWER);
 
 // Touch
-bool status = false;
+boolean status = false;
 int out = LOW;
-int IDLE_DURATION = 1000 * 180 // 3 Minutes
-bool idleMode = false;
+int IDLE_DURATION = 1000 * 180; // 3 Minutes
+boolean idleMode = false;
 int idleTime; //last Time, when the Idle Mode was activated
 #define touchIn 2
 #define touchOut 12
@@ -46,7 +46,7 @@ int idleTime; //last Time, when the Idle Mode was activated
 
 // Air Fan
 #define AIR_FAN 10
-#define AIR_FAN_SPEED = 1023
+#define AIR_FAN_SPEED 1023
 
 // Sound
 #define TONE 13
@@ -113,7 +113,7 @@ void calibrate_sensor(){
   // add some RGB LED effects to the loop?
   for (int i = 0; i < CALIBRATION_MEASUREMENTS; i++){
     Serial.println("calibrating sensor...please wait. ");
-    delay(ms_per_measurement); 
+    delay(MS_PER_MEASUREMENT); 
     mySensor.measureAirQuality();
   }
 }
@@ -164,24 +164,26 @@ float get_current_co2_average(){
 //
 
 void set_servor_motor_position(){
-  float new_servo_pos = FULLY_OPENED_MOTOR_ANGLE - (current_avg_co2 - LOWER) * WINDOW_FACTOR;
+  float new_servo_pos = FULLY_OPENED_MOTOR_ANGLE - (current_co2_avg - LOWER) * WINDOW_FACTOR;
   if (new_servo_pos > 180){
-    new_servo_pos = 180
+    new_servo_pos = 180;
   } else if (new_servo_pos < 0){
-    new_servo_pos = 0
+    new_servo_pos = 0;
   }
+  int current_servo_pos = myservo.read();
   Serial.print("current servo motor angle: ");
-  Serial.println(myservo.read());
+  Serial.println(current_servo_pos);
   int pos = int(new_servo_pos); // are floats allowed?
   Serial.print("new position is computed as ");
   Serial.println(pos);
   // set new position when new and current
   // position are not equal
   if (pos != current_servo_pos){
-    Serial.println("Setting new servo motor position.")
+    Serial.println("Setting new servo motor position.");
     myservo.write(pos);
+    Serial.println(pos);
   } else {
-    Serial.println("Servo motor position did not change; doing nothing.")
+    Serial.println("Servo motor position did not change; doing nothing.");
   }
 }
 
