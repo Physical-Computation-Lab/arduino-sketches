@@ -32,6 +32,9 @@ float WINDOW_FACTOR = FULLY_OPENED_ANGLE / (UPPER - LOWER);
 // Touch
 bool status = false;
 int out = LOW;
+int IDLE_DURATION = 1000 * 180 // 3 Minutes
+bool idleMode = false;
+int idleTime; //last Time, when the Idle Mode was activated
 #define touchIn 2
 #define touchOut 12
  
@@ -86,16 +89,19 @@ void setup() {
 
 void loop() {
   delay(MS_PER_MEASUREMENT); //Wait 1 second
-  // CO2 levels
-  set_co2_level();
-  // Servo motor
-  set_servor_motor_position();
-  // Touch
-  touch_sensor();
-  // RGB LED
+  if(!idleMode){
+    // CO2 levels
+    set_co2_level();
+    // Servo motor
+    set_servor_motor_position();
+    // Touch
+    touch_sensor();
+    // RGB LED
 
-  // Sound
-  // _debug();
+    // Sound
+    // _debug();
+  }
+  updateIdleMode();
 }
 
 //
@@ -192,6 +198,8 @@ void touch_sensor(){
     status = 1;
     Serial.print("Angefasst ");
     Serial.println(i);
+    idleTime = millis();
+    idleMode = true;
   } else if(status == 1 && i == 0){
     status = 0;
     Serial.print("Losgelassen ");
@@ -206,6 +214,18 @@ void touch_sensor(){
 //
 // Sound / tone functions
 //
+
+//
+// Idle Mode
+//
+
+void updateIdleMode(){
+  if(idleMode){
+    if(millis() - idleTime >= IDLE_DURATION){
+      idleMode = false;
+    }
+  }
+}
 
 void _debug(){
   //Tone testen
