@@ -13,7 +13,9 @@ float current_temp_avg;
 void setup() {
   // temperature
   pinMode(LM35, INPUT);
-
+  // startTime = millis();
+  Serial.begin(9600);
+  Wire.begin();
 }
 
 void loop() {
@@ -31,9 +33,9 @@ void set_temperature_measurement(){
   // update
   update_temp_measurements(temperature);
   //
-  current_temp_avg = get_current_temp_average();
+  float current_temp_avg = get_current_temp_average();
   Serial.print("The current average temperature in celsius is ");
-  Serial.println(current_temp_average);
+  Serial.println(current_temp_avg);
 }
 
 float get_current_temp_average(){
@@ -60,3 +62,4 @@ void update_temp_measurements(float new_temp_measurement){
   for (int i = 0; i < temp_measurements_length; i++){
     Serial.print(temp_measurements[i]);
   }
+}
