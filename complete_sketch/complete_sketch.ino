@@ -35,9 +35,9 @@ float WINDOW_FACTOR = FULLY_OPENED_MOTOR_ANGLE / (UPPER - LOWER);
 // Touch
 boolean status = false;
 int out = LOW;
-int IDLE_DURATION = 1000 * 180; // 3 Minutes
+unsigned long int IDLE_DURATION = 1000UL * 10UL; // 3 Minutes
 boolean idleMode = false;
-int idleTime; //last Time, when the Idle Mode was activated
+unsigned long int idleTime; //last Time, when the Idle Mode was activated
 #define touchIn 2
 #define touchOut 12
  
@@ -94,7 +94,7 @@ void setup() {
 }
 
 void loop() {
-  delay(MS_PER_MEASUREMENT); //Wait 1 second
+  //delay(MS_PER_MEASUREMENT); //Wait 1 second
   if(!idleMode){
     // CO2 levels
     set_co2_level();
@@ -105,7 +105,7 @@ void loop() {
     //Temperatur
     showTemperatur();
     // RGB LED
-    controlLED();
+    //controlLED();
     // Sound
     // _debug();
   }
@@ -132,7 +132,8 @@ void calibrate_sensor(){
   for (int i = 0; i < CALIBRATION_MEASUREMENTS; i++){
     Serial.println("calibrating sensor...please wait. ");
     delay(MS_PER_MEASUREMENT); 
-    mySensor.measureAirQuality();
+    set_co2_level();
+    //mySensor.measureAirQuality();
   }
 }
 
@@ -162,8 +163,9 @@ void update_measurements(float new_measurement){
   Serial.print("current measurements: ");
   for (int i = 0; i < measurements_length; i++){
     Serial.print(measurements[i]);
+    Serial.print(" ");
   }
-
+  Serial.println();
 }
 
 float get_current_co2_average(){
@@ -196,24 +198,26 @@ void set_servor_motor_position(){
   Serial.println(pos);
   // set new position when new and current
   // position are not equal
-  /*if (pos != current_servo_pos){
-    Serial.println("Setting new servo motor position.");
-    myservo.write(pos);
+  if (pos != current_servo_pos){
+    Serial.print("Setting new servo motor position.");
+    //myservo.write(pos);
     Serial.println(pos);
   } else {
     Serial.println("Servo motor position did not change; doing nothing.");
-  }*/
-  // Servo motor speed controlling
-  /*if (new_servo_pos - WINDOW_TOLERANCE > current_servo_pos){
+  }
+  // Servo motor speed controlling 
+  
+  if (new_servo_pos - WINDOW_TOLERANCE > current_servo_pos){
     Serial.println("Setting new servo motor position: opening.");
-    myservo.write(current_servo_pos + WINDOW_OPENING_SPEED); // can floats be used?
+    myservo.write(int(current_servo_pos + WINDOW_OPENING_SPEED)); // can floats be used?
   } else if (new_servo_pos + WINDOW_TOLERANCE < current_servo_pos){
-    Serial.println("Setting new servo motor position: opening.");
-    myservo.write(current_servo_pos - WINDOW_CLOSING_SPEED); // can floats be used?
+    Serial.println("Setting new servo motor position: closing.");
+    myservo.write(int(current_servo_pos - WINDOW_CLOSING_SPEED)); // can floats be used?
   } else {
     Serial.println("Not setting new servo motor position.");
-  }*/
-  /*while (new_servo_pos != 0){
+  }
+  /*
+  while (new_servo_pos != 0){
     myservo.write(current_servo_pos - 1);
     delay(20);
     current_servo_pos = myservo.read();
@@ -235,6 +239,7 @@ void touch_sensor(){
     Serial.println(i);
     idleTime = millis();
     idleMode = true;
+    myservo.write(FULLY_OPENED_MOTOR_ANGLE);
   } else if(status == 1 && i == 0){
     status = 0;
     Serial.print("Losgelassen ");
@@ -295,7 +300,8 @@ delay(2000);
 
 void updateIdleMode(){
   if(idleMode){
-    if(millis() - idleTime >= IDLE_DURATION){
+    Serial.println(millis() - idleTime);
+    if((millis() - idleTime) >= IDLE_DURATION){
       idleMode = false;
     }
   }
@@ -303,7 +309,7 @@ void updateIdleMode(){
 
 void _debug(){
   //Tone testen
-  //tone(13,1000);
+  //tone(TONE,1000);
   //delay(1000);
   //noTone(13);
   //delay(1000);
