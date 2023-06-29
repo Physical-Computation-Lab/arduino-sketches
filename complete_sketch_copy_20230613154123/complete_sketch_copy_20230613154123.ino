@@ -20,24 +20,18 @@ int measurements[20];
 
 // Servo motor
 #define SERVO 9
-#define FULLY_OPENED_MOTOR_ANGLE 180
-#define WINDOW_OPENING_SPEED 2
-#define WINDOW_CLOSING_SPEED 2
+#define FULLY_OPENED_ANGLE 180
 Servo myservo;  // create servo object to control a servo
 int startTime;  // is this variable needed?
 
 // Window
-#define LOWER 450.0  // default: 1000
-#define UPPER 800.0  // default: 2000
-#define WINDOW_TOLERANCE 2
-float WINDOW_FACTOR = FULLY_OPENED_MOTOR_ANGLE / (UPPER - LOWER);
+#define LOWER 600  // default: 1000
+#define UPPER 800  // default: 2000
+float WINDOW_FACTOR = FULLY_OPENED_ANGLE / (UPPER - LOWER);
 
 // Touch
-boolean status = false;
+bool status = false;
 int out = LOW;
-int IDLE_DURATION = 1000 * 180; // 3 Minutes
-boolean idleMode = false;
-int idleTime; //last Time, when the Idle Mode was activated
 #define touchIn 2
 #define touchOut 12
  
@@ -46,9 +40,6 @@ int idleTime; //last Time, when the Idle Mode was activated
 #define BLUE 5 
 #define RED 6 
 #define delayTime 20
-
-// Temperatur
-#define LM35 A0
 
 // Air Fan
 #define AIR_FAN 10
@@ -67,9 +58,9 @@ void setup() {
   pinMode(GREEN, OUTPUT); 
   pinMode(BLUE, OUTPUT); 
   pinMode(RED, OUTPUT);
-  analogWrite(GREEN, 255);
-  analogWrite(BLUE, 0);
-  analogWrite(RED, 0); 
+  digitalWrite(GREEN, 0);
+  digitalWrite(BLUE, 0);
+  digitalWrite(RED, HIGH); 
   // Servo motor
   startTime = millis(); // is this needed?
   Serial.begin(BAUD_RATE);
@@ -95,32 +86,17 @@ void setup() {
 
 void loop() {
   delay(MS_PER_MEASUREMENT); //Wait 1 second
-  if(!idleMode){
-    // CO2 levels
-    set_co2_level();
-    // Servo motor
-    set_servor_motor_position();
-    // Touch
-    touch_sensor();
-    //Temperatur
-    showTemperatur();
-    // RGB LED
-    controlLED();
-    // Sound
-    // _debug();
-  }
-  updateIdleMode();
+  // CO2 levels
+  set_co2_level();
+  // Servo motor
+  set_servor_motor_position();
+  // Touch
+  touch_sensor();
+  // RGB LED
+
+  // Sound
+  // _debug();
 }
-
-// Temperatur messen
-void showTemperatur(){
-float lmvalue = analogRead(LM35);
-float tmp = (lmvalue * 500) / 1023;
-Serial.print("Temperatur measurment in celsius ");
-Serial.println(tmp);
-
-}
-
 
 //
 // CO2 functions
@@ -180,44 +156,28 @@ float get_current_co2_average(){
 //
 // Servo motor / window functions
 //
-
+float current_avg_co2 = get_current_co2_average();
 void set_servor_motor_position(){
-  float new_servo_pos = FULLY_OPENED_MOTOR_ANGLE - (current_co2_avg - LOWER) * WINDOW_FACTOR;
+  float new_servo_pos = FULLY_OPENED_ANGLE - (current_avg_co2 - LOWER) * WINDOW_FACTOR;
   if (new_servo_pos > 180){
     new_servo_pos = 180;
   } else if (new_servo_pos < 0){
     new_servo_pos = 0;
   }
-  int current_servo_pos = myservo.read();
   Serial.print("current servo motor angle: ");
+  int current_servo_pos = myservo.read();
   Serial.println(current_servo_pos);
   int pos = int(new_servo_pos); // are floats allowed?
   Serial.print("new position is computed as ");
   Serial.println(pos);
   // set new position when new and current
   // position are not equal
-  /*if (pos != current_servo_pos){
+  if (pos != current_servo_pos){
     Serial.println("Setting new servo motor position.");
     myservo.write(pos);
-    Serial.println(pos);
   } else {
     Serial.println("Servo motor position did not change; doing nothing.");
-  }*/
-  // Servo motor speed controlling
-  /*if (new_servo_pos - WINDOW_TOLERANCE > current_servo_pos){
-    Serial.println("Setting new servo motor position: opening.");
-    myservo.write(current_servo_pos + WINDOW_OPENING_SPEED); // can floats be used?
-  } else if (new_servo_pos + WINDOW_TOLERANCE < current_servo_pos){
-    Serial.println("Setting new servo motor position: opening.");
-    myservo.write(current_servo_pos - WINDOW_CLOSING_SPEED); // can floats be used?
-  } else {
-    Serial.println("Not setting new servo motor position.");
-  }*/
-  /*while (new_servo_pos != 0){
-    myservo.write(current_servo_pos - 1);
-    delay(20);
-    current_servo_pos = myservo.read();
-  }*/
+  }
 }
 
 //
@@ -233,8 +193,6 @@ void touch_sensor(){
     status = 1;
     Serial.print("Angefasst ");
     Serial.println(i);
-    idleTime = millis();
-    idleMode = true;
   } else if(status == 1 && i == 0){
     status = 0;
     Serial.print("Losgelassen ");
@@ -244,62 +202,11 @@ void touch_sensor(){
 
 //
 // RGB LED functions
-void controlLED(){ // make green to red 
-  if(current_co2_avg > LOWER){
-    int redVal = 255;
-  int blueVal = 0;
-  int greenVal = 0;
-  for( int i = 0 ; i < 255 ; i += 1 ){
-    greenVal += 1;
-    redVal -= 1;
-    analogWrite( GREEN, 255 - greenVal );
-    analogWrite( RED, 255 - redVal );
-
-    delay( delayTime );
-  }
-  } 
-  /*delay(2000);
-  int redVal = 255;
-  int blueVal = 0;
-  int greenVal = 0;
-  for( int i = 0 ; i < 255 ; i += 1 ){
-    greenVal += 1;
-    redVal -= 1;
-    analogWrite( GREEN, 255 - greenVal );
-    analogWrite( RED, 255 - redVal );
-
-    delay( delayTime );
-  }
-delay(2000);
-   redVal = 0;
-   blueVal = 0;
-   greenVal = 255;
-  for( int i = 0 ; i < 255 ; i += 1 ){
-    greenVal -= 1;
-    redVal += 1;
-    analogWrite( GREEN, 255 - greenVal );
-    analogWrite( RED, 255 - redVal );
-
-    delay( delayTime );
-  }*/
-}
 //
 
 //
 // Sound / tone functions
 //
-
-//
-// Idle Mode
-//
-
-void updateIdleMode(){
-  if(idleMode){
-    if(millis() - idleTime >= IDLE_DURATION){
-      idleMode = false;
-    }
-  }
-}
 
 void _debug(){
   //Tone testen
@@ -326,7 +233,3 @@ void _debug(){
 //
 // Air fan functions
 //
-
-
-
-
