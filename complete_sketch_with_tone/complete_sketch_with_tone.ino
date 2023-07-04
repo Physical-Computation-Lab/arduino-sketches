@@ -10,6 +10,7 @@
 // SGP30 Air Quality Sensor
 SGP30 mySensor;  // create an object of the SGP30 class
 float current_co2_avg;
+float current_temperatur_avg;
 #define MS_PER_MEASUREMENT 1000
 #define CALIBRATION_MEASUREMENTS 15
 // trying to set a variables' value to 20 (for example)
@@ -17,6 +18,7 @@ float current_co2_avg;
 // with it, so just hardcode the value.
 // this value should be adapted empirically.
 int measurements[20];
+int temperatur_measurements[20];
 
 // Servo motor
 #define SERVO 9
@@ -32,10 +34,13 @@ int startTime;  // is this variable needed?
 #define WINDOW_TOLERANCE 2
 float WINDOW_FACTOR = FULLY_OPENED_MOTOR_ANGLE / (UPPER - LOWER);
 
+//Temperatur Grenzen
+#define COLDEST 17.0
+
 // Touch
 boolean status = false;
 int out = LOW;
-unsigned long int IDLE_DURATION = 1000UL * 60UL;  // 3 Minutes
+unsigned long int IDLE_DURATION = 1000UL * 5UL;  // 3 Minutes
 boolean idleMode = false;
 unsigned long int idleTime;  //last Time, when the Idle Mode was activated
 #define touchIn 2
@@ -100,7 +105,7 @@ void setup() {
 }
 
 void loop() {
-  //delay(MS_PER_MEASUREMENT); //Wait 1 second
+  delay(MS_PER_MEASUREMENT); //Wait 1 second
   if (!idleMode) {
     // CO2 levels
     set_co2_level();
@@ -109,7 +114,7 @@ void loop() {
     // Touch
     touch_sensor();
     //Temperatur
-    showTemperatur();
+    getTemperatur();
     // RGB LED
     //controlLED();
     // Sound
@@ -122,12 +127,57 @@ void loop() {
   }
 }
 
-// Temperatur messen
-void showTemperatur() {
+void getTemperatur(){
+  set_temperatur();
+  showTemperatur();
+}
+
+void set_temperatur(){
   float lmvalue = analogRead(LM35);
   float tmp = (lmvalue * 500) / 1023;
-  Serial.print("Temperatur measurment in celsius ");
-  Serial.println(tmp);
+
+  update_temperatur(tmp);
+}
+
+void update_temperatur(float new_measurement) {
+  // determine array length (see comment at beginning of file)
+  int measurements_length = sizeof(temperatur_measurements) / sizeof(temperatur_measurements[0]);
+  // "move" every element one to the left
+  for (int i = 1; i < measurements_length; i++) {
+    temperatur_measurements[i - 1] = temperatur_measurements[i];
+  }
+  // finally, add new measurement value to array
+  temperatur_measurements[measurements_length - 1] = new_measurement;
+  /*
+  Serial.print("current measurements: ");
+  for (int i = 0; i < measurements_length; i++) {
+    Serial.print(measurements[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+  */
+}
+
+// Temperatur messen
+void showTemperatur() {
+
+  //Serial.print("Temperatur measurment in celsius ");
+  //Serial.println(tmp);
+
+  int temperatur_measurements_length = sizeof(temperatur_measurements) / sizeof(temperatur_measurements[0]);
+  float sum = 0;
+  for (int i = 0; i < temperatur_measurements_length; i++) {
+    sum = sum + temperatur_measurements[i];
+  }
+  sum = sum / temperatur_measurements_length;
+    Serial.print("Temperatur measurment in celsius ");
+    Serial.println(sum);
+
+  if (sum < COLDEST){
+    //LED BLAU ___ BLINKEN 
+    // TONAUSGABE ?
+  }
+
 }
 
 
@@ -142,6 +192,7 @@ void calibrate_sensor() {
     Serial.println("calibrating sensor...please wait. ");
     delay(MS_PER_MEASUREMENT);
     set_co2_level();
+    set_temperatur();
     //mySensor.measureAirQuality();
   }
 }
@@ -169,12 +220,14 @@ void update_measurements(float new_measurement) {
   }
   // finally, add new measurement value to array
   measurements[measurements_length - 1] = new_measurement;
+  /*
   Serial.print("current measurements: ");
   for (int i = 0; i < measurements_length; i++) {
     Serial.print(measurements[i]);
     Serial.print(" ");
   }
   Serial.println();
+  */
 }
 
 float get_current_co2_average() {
@@ -248,12 +301,15 @@ void touch_sensor() {
     Serial.println(i);
     idleTime = millis();
     idleMode = true;
+    delay(1000 * 1);
     myservo.write(FULLY_OPENED_MOTOR_ANGLE);
   } else if (status == 1 && i == 0) {
     status = 0;
     Serial.print("Losgelassen ");
     Serial.println(i);
   }
+  Serial.print("Touch Sensor: ");
+  Serial.println(i);
 }
 
 //
