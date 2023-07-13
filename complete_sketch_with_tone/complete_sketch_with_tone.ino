@@ -2,7 +2,10 @@
 #include <Wire.h>
 #include <Servo.h>
 #include "pitches.h"
-
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
 
 // General
 #define BAUD_RATE 9600
@@ -29,7 +32,7 @@ Servo myservo;  // create servo object to control a servo
 int startTime;  // is this variable needed?
 
 // Window
-#define LOWER 450.0  // default: 1000
+#define LOWER 500.0  // default: 1000
 #define UPPER 800.0  // default: 2000
 #define WINDOW_TOLERANCE 2
 float WINDOW_FACTOR = FULLY_OPENED_MOTOR_ANGLE / (UPPER - LOWER);
@@ -40,7 +43,7 @@ float WINDOW_FACTOR = FULLY_OPENED_MOTOR_ANGLE / (UPPER - LOWER);
 // Touch
 boolean status = false;
 int out = LOW;
-unsigned long int IDLE_DURATION = 1000UL * 5UL;  // 3 Minutes
+unsigned long int IDLE_DURATION = 1000UL * 30UL ;  // 3 Minutes
 boolean idleMode = false;
 unsigned long int idleTime;  //last Time, when the Idle Mode was activated
 #define touchIn 2
@@ -52,10 +55,16 @@ unsigned long int TONE_DURATION = 1000UL;  // 1 Sekunde
 bool playTone = false;
 
 // RGB LED and Delay Time
-#define GREEN 11
-#define BLUE 5
-#define RED 6
-#define delayTime 20
+#define PIN        6 // On Trinket or Gemma, suggest changing this to 1
+#define NUMPIXELS 1 // Popular NeoPixel ring size
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+bool isBlue=false;
+
+const int COLOR_COUNT = 5;
+enum colors { RED = 0, GREEN, BLUE, YELLOW, PURPLE };
+const uint8_t BRIGHTNESS = 80;
+unsigned long int blinktime = 0;
+unsigned long int BLINKING_DURATION = 1000UL; 
 
 // Temperatur
 #define LM35 A0
@@ -74,12 +83,12 @@ void setup() {
   // Sound / tone
   pinMode(TONE, OUTPUT);
   // LED
-  pinMode(GREEN, OUTPUT);
-  pinMode(BLUE, OUTPUT);
-  pinMode(RED, OUTPUT);
-  analogWrite(GREEN, 255);
-  analogWrite(BLUE, 0);
-  analogWrite(RED, 0);
+#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
+  clock_prescale_set(clock_div_1);
+#endif
+  // END of Trinket-specific code.
+
+  pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   // Servo motor
   startTime = millis();  // is this needed?
   Serial.begin(BAUD_RATE);
@@ -105,7 +114,7 @@ void setup() {
 }
 
 void loop() {
-  delay(MS_PER_MEASUREMENT); //Wait 1 second
+  //delay(MS_PER_MEASUREMENT); //Wait 1 second
   if (!idleMode) {
     // CO2 levels
     set_co2_level();
@@ -116,11 +125,13 @@ void loop() {
     //Temperatur
     getTemperatur();
     // RGB LED
-    //controlLED();
+    controlLED();
     // Sound
     toneManagement();
   } else {
     // CO2 levels
+    pixels.clear();
+    pixels.show();
     set_co2_level();
 
     updateIdleMode();
@@ -170,6 +181,7 @@ void showTemperatur() {
     sum = sum + temperatur_measurements[i];
   }
   sum = sum / temperatur_measurements_length;
+  current_temperatur_avg = sum;
     Serial.print("Temperatur measurment in celsius ");
     Serial.println(sum);
 
@@ -188,13 +200,36 @@ void showTemperatur() {
 void calibrate_sensor() {
   // measureAirQuality should be called in one second increments after a call to initAirQuality
   // add some RGB LED effects to the loop?
+  pixels.clear();
+  pixels.show();
   for (int i = 0; i < CALIBRATION_MEASUREMENTS; i++) {
     Serial.println("calibrating sensor...please wait. ");
     delay(MS_PER_MEASUREMENT);
     set_co2_level();
     set_temperatur();
+    pixels.setPixelColor(0, getRandomColor()); 
+    pixels.setBrightness(BRIGHTNESS);  
+    pixels.show();  
     //mySensor.measureAirQuality();
   }
+    pixels.clear();
+    pixels.show();
+
+}
+
+uint32_t getRandomColor()
+{    
+    switch(random(COLOR_COUNT))
+    {
+        case RED:    { return pixels.Color(255, 0, 0);   }
+        case GREEN:  { return pixels.Color(0, 255, 0);   }
+        case BLUE:   { return pixels.Color(0, 0, 255);   }
+        case YELLOW: { return pixels.Color(255, 255, 0); }
+        case PURPLE: { return pixels.Color(255, 0, 255); }
+        
+        // should never happen
+        default:{ return pixels.Color(255, 255, 255); }
+    }  
 }
 
 void set_co2_level() {
@@ -315,43 +350,30 @@ void touch_sensor() {
 //
 // RGB LED functions
 void controlLED() {  // make green to red
-  if (current_co2_avg > LOWER) {
-    int redVal = 255;
-    int blueVal = 0;
-    int greenVal = 0;
-    for (int i = 0; i < 255; i += 1) {
-      greenVal += 1;
-      redVal -= 1;
-      analogWrite(GREEN, 255 - greenVal);
-      analogWrite(RED, 255 - redVal);
+        if (current_temperatur_avg > 16.0){
+        int i = myservo.read();
+        Serial.print("-----------------------");
+        Serial.print(i);
+        pixels.setPixelColor(0, pixels.Color(180-i, i, 0)); 
+        pixels.setBrightness(BRIGHTNESS);  
+        pixels.show();   // Send the updated pixel colors to the hardware.
+        } else {
+          if ((millis() - blinktime) >= BLINKING_DURATION && !isBlue) {
+        pixels.setPixelColor(0, pixels.Color(0, 0, 255)); 
+        pixels.setBrightness(BRIGHTNESS);  
+        pixels.show(); 
+        blinktime = millis();
+        isBlue = true;
+          } else if ((millis() - blinktime) >= BLINKING_DURATION && isBlue) {
+        int i = myservo.read();
+        pixels.setPixelColor(0, pixels.Color(180-i, i, 0)); 
+        pixels.setBrightness(BRIGHTNESS);  
+        pixels.show();
+        blinktime = millis();
+        isBlue=false;
+          }
+        }
 
-      delay(delayTime);
-    }
-  }
-  /*delay(2000);
-  int redVal = 255;
-  int blueVal = 0;
-  int greenVal = 0;
-  for( int i = 0 ; i < 255 ; i += 1 ){
-    greenVal += 1;
-    redVal -= 1;
-    analogWrite( GREEN, 255 - greenVal );
-    analogWrite( RED, 255 - redVal );
-
-    delay( delayTime );
-  }
-delay(2000);
-   redVal = 0;
-   blueVal = 0;
-   greenVal = 255;
-  for( int i = 0 ; i < 255 ; i += 1 ){
-    greenVal -= 1;
-    redVal += 1;
-    analogWrite( GREEN, 255 - greenVal );
-    analogWrite( RED, 255 - redVal );
-
-    delay( delayTime );
-  }*/
 }
 //
 
